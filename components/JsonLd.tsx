@@ -1,0 +1,9 @@
+// Injects schema.org JSON-LD. Used for LocalBusiness (home), FAQPage, Article, DefinedTermSet.
+export function JsonLd({ data }: { data: Record<string, unknown> }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}

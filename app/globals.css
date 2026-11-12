@@ -1,0 +1,412 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: light; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Tracking per level rather than one value for all three.
+
+     A single -0.01em cannot serve a 3x size range, because em-tracking scales
+     linearly with size while the optical need does not: large type wants to be
+     pulled tighter than the proportion suggests, small type wants to be left
+     alone or opened up. Applied uniformly it landed the 54px h1 at -0.54px —
+     looser than the -0.64 to -1.4px Stripe sets across its display sizes, so
+     the headline read slightly loose — while dragging the 18px h3 to -0.18px,
+     which is the wrong direction entirely for text at that size. */
+  h1, h2, h3 { @apply font-display font-semibold leading-[1.12]; }
+  h1 { @apply tracking-[-0.025em]; }
+  h2 { @apply tracking-[-0.018em]; }
+  h3 { @apply tracking-normal; }
+  /* Accessibility is the brand: visible focus, comfortable reading. */
+  :where(a, button, input, textarea, select):focus-visible {
+    outline: 3px solid theme("colors.amethyst.DEFAULT");
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection { background: theme("colors.champagne"); color: theme("colors.amethyst.deep"); }
+}
+
+@layer components {
+  .eyebrow { @apply font-sans uppercase text-[0.72rem] tracking-[0.15em] font-semibold text-bronze; }
+  .shell { @apply max-w-shell mx-auto px-6; }
+  .prose-measure { @apply max-w-measure text-[1.075rem] leading-[1.75]; }
+  /* Every heading, the first letter of each word capitalised, on a page that
+     starts with <span data-title-case hidden />. CSS rather than retyped copy, so
+     a heading added later can't miss it and the FAQ schema keeps its sentences. A
+     marker rather than a wrapper: the header and footer rules below read #main's
+     direct children, and a wrapper hides the dark hero from them. */
+  main:has(> [data-title-case]) :is(h1, h2, h3, h4, dt) { @apply capitalize; }
+  /* Fraunces italic for the one "human" accent word in a heading */
+  .accent { @apply italic text-bronze font-medium; }
+  .on-dark .accent { @apply text-champagne; }
+  /* The footer keeps a 6rem margin so a light page ends on paper before it
+     turns dark. A page whose last section is already dark — the homepage's
+     closing call — got that margin as a stray strip of paper between two dark
+     blocks, which read as a rendering fault. There the two meet, divided by a
+     hairline instead. */
+  body:has(> main > :last-child.on-dark) > footer { @apply mt-0 border-t border-white/10; }
+  /* transition-[transform,box-shadow] rather than transition-transform: the lift
+     read as the button sliding, because nothing about its relationship to the
+     page changed as it moved. A shadow that grows with the movement is what
+     makes it read as rising instead. active: returns it to the page on press,
+     so a click feels answered — on touch, where there is no hover, that press
+     state is the only feedback the button ever gives. */
+  .btn { @apply inline-flex items-center gap-2 rounded-full font-sans font-semibold uppercase
+          text-[0.76rem] tracking-[0.05em] px-6 py-3.5
+          transition-[transform,translate,box-shadow,background-color,border-color] duration-200 ease-out
+          hover:-translate-y-0.5 active:translate-y-0 active:duration-75; }
+  /* Worth knowing before changing this: champagne is not locatable by fill on
+     a light page — but neither was the lime it replaced, which measured 1.46:1
+     against paper and champagne 1.59:1, both far under the 3:1 WCAG wants for
+     a control boundary. The button is found by its shadow, its size and its
+     text, which is why swapping the fill costs nothing in usability and buys
+     a palette that holds together. */
+  .btn-primary { @apply bg-champagne text-amethyst-deep shadow-champagne hover:shadow-[0_10px_26px_rgba(214,195,160,0.5)]; }
+  .btn-dark { @apply bg-amethyst text-white shadow-[0_4px_12px_rgba(52,32,107,0.18)] hover:shadow-[0_10px_24px_rgba(52,32,107,0.28)]; }
+  /* No hover fill. Ghost is used on the purple hero and on paper, so any single
+     background colour is wrong on one of them — and bg-current/5 is not a real
+     utility, because currentColor cannot carry an opacity modifier. It still
+     gets the lift and the timing from .btn; the border already reads as the
+     affordance. */
+  .btn-ghost { @apply border border-current bg-transparent; }
+  /* Destructive actions. Existed only as hand-rolled classes on a bare .btn,
+     so the two places that delete things styled themselves independently. */
+  .btn-danger { @apply border border-danger bg-transparent text-danger hover:bg-danger/10; }
+  /* The transition lives on .card so every card animates consistently. Cards
+     that lift already add hover:-translate-y-1 themselves; those that do not
+     still get the border and shadow response, which is what tells a visitor the
+     whole card is the target rather than only the link inside it. */
+  .card { @apply rounded-xl2 bg-surface border border-hairline shadow-lift
+          transition-[transform,box-shadow,border-color] duration-300 ease-out; }
+  .card:hover { @apply border-amethyst/25 shadow-[0_18px_40px_rgba(34,26,51,0.13)]; }
+}
+
+/* The signature "thread": one continuous line drawn on scroll (reduced-motion safe).
+   The keyframes live here rather than in tailwind.config.ts's theme.extend.keyframes
+   because Tailwind only emits an @keyframes block when a generated animation-*
+   utility references it — and this animation is applied by the hand-written rule
+   below, not by a utility class. Declared there, it was silently dropped from the
+   build, leaving stroke-dashoffset pinned at 1 and the thread invisible sitewide. */
+@keyframes thread-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* Drawn is the DEFAULT state. This used to be stroke-dashoffset: 1 — hidden in
+   CSS and relying on JS to reveal it — so if the script failed, hydration broke,
+   or the observer never fired, the thread stayed invisible with no way back.
+   Now only a live client hides it, via .arm added on mount, and the worst case
+   is a line that appears without animating rather than one that never appears. */
+.thread path { stroke-dasharray: 1; stroke-dashoffset: 0; }
+
+/* Smooth scrolling, site-wide.
+   scroll-padding-top matters as much as the behaviour: the header is sticky, so
+   without it every in-page anchor lands with its heading hidden underneath the
+   bar. 5.5rem clears the bar plus a little air.
+   The prefers-reduced-motion block further down already forces
+   scroll-behavior:auto, so this switches itself off for anyone who asks. */
+:root {
+  /* The height of the header bar. Set here rather than measured, because two
+     things depend on agreeing about it: the bar sizes itself to this, and a
+     full-bleed hero offsets itself by exactly this to run up underneath.
+     Change it here and both follow. */
+  --bar-h: 5rem;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+/* While the eased wheel (components/SmoothScroll.tsx) is running it owns the
+   motion, and the browser's own smooth scrolling has to stand down — two
+   easings on one scroll position fight, and the page judders. Lenis puts these
+   classes on <html> itself, so nothing here applies where it is not running. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+html.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+html.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+html.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .thread.arm path { stroke-dashoffset: 1; }
+  .thread.arm.drawn path { animation: thread-draw 1.6s ease forwards; }
+}
+/* Scroll reveal. Every state is set by components/ScrollReveal.tsx, from
+   JavaScript, after mount — nothing here can hide content on its own, so a
+   page that never runs its bundle still renders in full.
+
+   Armed means invisible, so anything that stops the observer releasing a unit
+   takes part of the page with it. The commoner failure is not a dead script
+   but a half-running one, which hides and never releases. So the release does
+   not depend on JavaScript: the failsafe animation shows a unit ten seconds
+   after it was hidden whatever else happens, and the "in" state cancels it
+   when the observer does its job first. ScrollReveal only hides units within
+   a screen of the viewport, so a reader almost always gets there first. */
+:root { --reveal-ease: cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* The page never scrolls sideways because something is sliding in from off
+   the edge. clip rather than hidden: it does not make <main> a scroll
+   container, so the sticky columns inside it keep working. */
+main { overflow-x: clip; }
+
+[data-reveal="armed"] {
+  opacity: 0;
+  animation: reveal-failsafe 1ms linear 10s forwards;
+}
+[data-reveal="armed"][data-reveal-variant="up"] { transform: translate3d(0, 44px, 0); }
+/* Scrolling back up, a unit comes down into place instead. */
+[data-reveal="armed"][data-reveal-variant="up"][data-reveal-from="above"] { transform: translate3d(0, -44px, 0); }
+[data-reveal="armed"][data-reveal-variant="left"] { transform: translate3d(-80px, 0, 0); }
+[data-reveal="armed"][data-reveal-variant="right"] { transform: translate3d(80px, 0, 0); }
+/* Photographs open out of a cropped frame while the picture settles from a
+   zoom — the frame and the image moving at different speeds is what makes it
+   read as depth rather than a fade. */
+[data-reveal="armed"][data-reveal-variant="media"] {
+  clip-path: inset(14% 10% 14% 10% round 18px);
+}
+[data-reveal="armed"][data-reveal-variant="media"] img { transform: scale(1.22); }
+@keyframes reveal-failsafe {
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+  }
+}
+[data-reveal="in"] {
+  /* Cancels the failsafe, which would otherwise keep overriding these. */
+  animation: none;
+  opacity: 1;
+  transform: none;
+  /* Eased to settle rather than bounce — overshoot draws the eye back to
+     something it has already passed. The delay is the unit's place in the
+     stagger, set by ScrollReveal. */
+  transition:
+    opacity 900ms var(--reveal-ease),
+    transform 1100ms var(--reveal-ease),
+    clip-path 1200ms var(--reveal-ease);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal="in"][data-reveal-variant="media"] { clip-path: inset(0 0 0 0 round 18px); }
+[data-reveal="in"][data-reveal-variant="media"] img {
+  transform: none;
+  transition: transform 1500ms var(--reveal-ease) var(--reveal-delay, 0ms);
+}
+
+/* Body photographs drift slowly inside their frames as the page scrolls past,
+   where the browser can tie an animation to scroll position. On the separate
+   translate and scale properties, so the reveal zoom and the hover zoom —
+   both on transform — still apply on top. */
+@keyframes photo-drift {
+  from { translate: 0 -6%; }
+  to { translate: 0 6%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    [data-reveal-media] > img {
+      scale: 1.14;
+      animation: photo-drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Hover. Only where there is a real pointer: on touch, hover states stick
+   after a tap and read as a bug. Movement is additionally kept off for anyone
+   who has asked for reduced motion; colour and light still apply to them.
+   ------------------------------------------------------------------------ */
+@media (hover: hover) {
+  /* Primary navigation: a rule draws in under the item from the left, and
+     stays while its dropdown is open. */
+  .nav-link { position: relative; }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 1.5px;
+    border-radius: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 350ms var(--reveal-ease);
+  }
+  .nav-link:hover::after,
+  .group:hover .nav-link::after,
+  .group:focus-within .nav-link::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Inline links in running copy: an underline that grows in, instead of one
+     that blinks on. Links styled as always-underlined, buttons and cards keep
+     their own treatment. */
+  main :is(p, li, dd) > a:not(.btn):not(.card):not(.underline) {
+    text-decoration-line: none;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0 1px;
+    transition: background-size 350ms var(--reveal-ease), color 200ms ease;
+  }
+  main :is(p, li, dd) > a:not(.btn):not(.card):not(.underline):hover {
+    text-decoration-line: none;
+    background-size: 100% 1px;
+  }
+
+  /* Ghost buttons fill from the left with a wash of their own text colour, so
+     the same rule works on the purple hero and on paper — the reason they had
+     no hover fill. */
+  .btn-ghost {
+    background-image: linear-gradient(
+      color-mix(in srgb, currentColor 14%, transparent),
+      color-mix(in srgb, currentColor 14%, transparent)
+    );
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: 0% 100%;
+    transition-property: transform, translate, box-shadow, background-size, border-color;
+  }
+  .btn-ghost:hover { background-size: 100% 100%; }
+
+  /* A soft light follows the pointer across every card. Its position comes
+     from components/PointerFx.tsx; without it the light simply sits in the
+     middle. Painted over the card (including its photograph) but never takes
+     a click. Forms are left alone: a light moving under the fields while
+     someone types reads as a fault. :where() keeps positioning out of the
+     way of any card a utility has already positioned. */
+  :where(.card, [data-glow]) { position: relative; }
+  :is(.card, [data-glow]):not(form):not(:has(form))::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 50%), rgb(214 195 160 / 0.26), transparent 60%);
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+  :is(.card, [data-glow]):not(form):not(:has(form)):hover::after { opacity: 1; }
+
+  /* FAQ questions answer the pointer before they are opened. */
+  details > summary:hover > span:first-child { color: theme("colors.amethyst.DEFAULT"); }
+
+  /* Footer links lean toward the pointer. */
+  .footer-link { display: inline-block; transition: color 200ms ease, transform 250ms var(--reveal-ease); }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  /* A light passes across the filled buttons. Painted under the label (the
+     button is its own stacking context) and clipped to the pill. */
+  /* :where() so a button positioned by a utility (fixed, absolute) keeps it. */
+  :where(.btn-primary, .btn-dark) { position: relative; overflow: hidden; isolation: isolate; }
+  .btn-primary::after,
+  .btn-dark::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.4) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 750ms var(--reveal-ease);
+  }
+  .btn-primary:hover::after,
+  .btn-dark:hover::after { transform: translateX(120%); }
+
+  /* Every forward arrow nudges toward where it is pointing. */
+  .lucide-arrow-right,
+  .lucide-arrow-up-right { transition: transform 300ms var(--reveal-ease); }
+  a:hover .lucide-arrow-right,
+  button:hover .lucide-arrow-right { transform: translateX(4px); }
+  a:hover .lucide-arrow-up-right { transform: translate(2px, -2px); }
+
+  /* Photographs inside a card ease in a little closer, and shift against the
+     pointer (--px/--py from PointerFx) so the picture reads as sitting a
+     layer behind the card. On translate, so the zoom on transform still
+     applies. */
+  :is(.card, [data-glow]) img {
+    transition-property: transform, translate;
+    transition-duration: 700ms;
+    transition-timing-function: var(--reveal-ease);
+    translate: calc(var(--px, 0) * -14px) calc(var(--py, 0) * -10px);
+  }
+  a.card:hover img:not([class*="scale"]) { transform: scale(1.06); }
+
+  /* Body photographs breathe in a touch under the pointer. */
+  [data-reveal-media] img { transition: transform 900ms var(--reveal-ease); }
+  [data-reveal-media]:hover img { transform: scale(1.04); }
+
+  .footer-link:hover { transform: translateX(4px); }
+
+  /* Social icons turn toward the pointer as their circle fills. */
+  footer a[aria-label] svg { transition: transform 400ms var(--reveal-ease); }
+  footer a[aria-label]:hover svg { transform: rotate(-12deg) scale(1.12); }
+
+  /* FAQ: the question leans in, and a closed one's plus turns a quarter to
+     show it opens. */
+  details > summary > span:first-child { transition: color 200ms ease, transform 300ms var(--reveal-ease); }
+  details > summary:hover > span:first-child { transform: translateX(6px); }
+  details:not([open]) > summary:hover > span:last-child { transform: rotate(90deg); }
+
+  /* Condition chips and tags spring up a little further. */
+  a.rounded-full.border:hover { transform: translateY(-3px) scale(1.04); }
+
+  /* Quotes and plain cards lift slightly, so the whole surface reads as
+     something to rest on rather than a printed box. */
+  .lift-on-hover { transition: transform 300ms var(--reveal-ease), box-shadow 300ms ease; }
+  .lift-on-hover:hover { transform: translateY(-6px); box-shadow: 0 22px 48px rgba(34, 26, 51, 0.14); }
+}
+
+/* Special Minds Academy: the knot behind each dark band (DarkBand in
+   components/academy/ui.tsx). It turns about its three-fold centre, KNOT_ORIGIN
+   in components/academy/Knot.tsx, and its thread draws the four strokes one
+   after another at a single pace, each stroke's time in step with its length
+   (207, 60, 134 and 207 viewBox units, in KNOT_PATHS order), so it reads as
+   one thread being tied. Everything moving is
+   inside no-preference: under reduced motion the dash is never set, so the
+   thread is simply there, whole. */
+.academy-knot { transform-origin: 50% 43.09%; }
+@media (prefers-reduced-motion: no-preference) {
+  .academy-knot { animation: academy-knot-turn 160s linear infinite; }
+  .academy-knot-thread path {
+    stroke-dasharray: 1 1.1;
+    stroke-dashoffset: 1.02;
+    animation: academy-knot-draw linear forwards;
+  }
+  .academy-knot-thread path:nth-child(1) { animation-duration: 0.82s; animation-delay: 0.35s; }
+  .academy-knot-thread path:nth-child(2) { animation-duration: 0.24s; animation-delay: 1.17s; }
+  .academy-knot-thread path:nth-child(3) { animation-duration: 0.53s; animation-delay: 1.41s; }
+  .academy-knot-thread path:nth-child(4) { animation-duration: 0.82s; animation-delay: 1.94s; }
+}
+@keyframes academy-knot-draw { to { stroke-dashoffset: 0; } }
+@keyframes academy-knot-turn { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* animation-duration alone left every transition running, so a hover lift and
+     any transform still moved for someone who had explicitly asked them not to.
+     Transitions and transforms are both neutralised here, and <Reveal> never
+     arms itself in the first place, so this is the backstop rather than the
+     mechanism. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal="armed"] { opacity: 1 !important; transform: none !important; clip-path: none !important; }
+}
