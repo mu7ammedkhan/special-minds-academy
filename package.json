@@ -2,9 +2,9 @@
   "name": "special-minds-academy",
   "version": "1.0.0",
   "private": true,
-  "description": "Special Minds Academy (specialminds.academy) — IBT, ABAT, IBA and LSA training in the UAE, and guides to ABA credentials.",
+  "description": "Special Minds Academy (specialminds.academy) \u2014 IBT, ABAT, IBA and LSA training in the UAE, and guides to ABA credentials.",
   "engines": {
-    "node": ">=18.18"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
