@@ -1,0 +1,21 @@
+{
+  // There was no ESLint config at all, so `npm run lint` prompted to create one
+  // and then sat waiting for an answer — it could never run unattended, which
+  // means it had never run in CI either. eslint and eslint-config-next were both
+  // already installed; only this file was missing.
+  "extends": "next/core-web-vitals",
+  "ignorePatterns": ["ios/**", "marketing/**", "supabase/**", "public/**", ".next/**"],
+  "rules": {
+    // Off deliberately, not out of laziness — it flagged 186 apostrophes in
+    // ordinary prose. The rule guards against confusing a quote in JSX text with
+    // a JSX delimiter, but React renders these correctly and the pages are the
+    // product here: turning every "child's" into "child&apos;s" makes copy that
+    // non-engineers edit markedly harder to read and to change, in exchange for
+    // nothing a visitor would ever see.
+    //
+    // The typographic answer, if this is revisited, is curly apostrophes (’) in
+    // the copy rather than HTML entities — better typesetting and it satisfies
+    // the rule — but that is a deliberate content pass, not a lint fix.
+    "react/no-unescaped-entities": "off"
+  }
+}

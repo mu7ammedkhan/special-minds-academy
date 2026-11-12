@@ -4,7 +4,12 @@ HANDOVER.md
 
 node_modules/
 .next/
+.next-dev/
+out/
 .vercel/
 .env*
 !.env.example
+*.tsbuildinfo
+next-env.d.ts
 .DS_Store
+.claude/
