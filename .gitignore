@@ -14,3 +14,6 @@ next-env.d.ts
 .DS_Store
 .claude/
 .vercel
+
+# Upload bundles built for Hostinger.
+*.zip

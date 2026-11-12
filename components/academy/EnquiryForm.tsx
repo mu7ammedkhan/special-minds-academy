@@ -1,6 +1,6 @@
 "use client";
-import { useEffect } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useEffect } from "react";
+import { useFormStatus } from "react-dom";
 import { usePathname } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 import { CheckCircle2 } from "lucide-react";
@@ -35,7 +35,7 @@ function Submit({ label }: { label: string }) {
  * conversion, because no campaign buys traffic for these courses yet.
  */
 export function EnquiryForm({ course = "not-sure", submitLabel = "Send my enquiry" }: { course?: string; submitLabel?: string }) {
-  const [state, action] = useFormState<EnquiryState, FormData>(sendAcademyEnquiry, {});
+  const [state, action] = useActionState<EnquiryState, FormData>(sendAcademyEnquiry, {});
   const page = usePathname().replace(/^\/academy(?=\/|$)/, "") || "/";
 
   useEffect(() => {

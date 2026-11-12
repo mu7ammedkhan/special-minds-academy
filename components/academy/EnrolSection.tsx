@@ -1,6 +1,6 @@
 "use client";
-import { Suspense, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { Suspense, useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 import { Check, ShieldCheck } from "lucide-react";
@@ -74,7 +74,7 @@ function Result({ state, amount }: { state: EnrolState; amount: number }) {
 }
 
 function FullForm() {
-  const [state, action] = useFormState<EnrolState, FormData>(enrolInFull, {});
+  const [state, action] = useActionState<EnrolState, FormData>(enrolInFull, {});
   return (
     <form
       action={action}
@@ -92,7 +92,7 @@ function FullForm() {
 }
 
 function DepositForm() {
-  const [state, action] = useFormState<EnrolState, FormData>(reserveWithDeposit, {});
+  const [state, action] = useActionState<EnrolState, FormData>(reserveWithDeposit, {});
   return (
     <form
       action={action}

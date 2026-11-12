@@ -35,7 +35,7 @@ export async function reserveSeat(_prev: RegisterState, formData: FormData): Pro
   // supabase/migrations/0015_ibt_training_registrations.sql.
   const registrationId = randomUUID();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error: insertError } = await supabase
     .from("ibt_registrations")
     .insert({ id: registrationId, ...registration });
@@ -55,7 +55,7 @@ export async function reserveSeat(_prev: RegisterState, formData: FormData): Pro
     ziina_status: null,
   });
 
-  const origin = headers().get("origin") ?? "";
+  const origin = (await headers()).get("origin") ?? "";
   let paymentIntent;
   try {
     paymentIntent = await createZiinaPaymentIntent({

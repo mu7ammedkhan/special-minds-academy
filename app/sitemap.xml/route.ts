@@ -19,6 +19,9 @@ const PAGES: [path: string, priority: number][] = [
   ["/contact", 0.5],
 ];
 
+// Built once at build time, as in Next 14 (route handlers became dynamic by default in 15).
+export const dynamic = "force-static";
+
 export function GET() {
   const today = new Date().toISOString().slice(0, 10);
   const entry = (path: string, lastmod: string, priority: number) =>
