@@ -1,0 +1,10 @@
+# Handover material from the Special Minds UAE codebase: source to port from, not this project.
+reference/
+HANDOVER.md
+
+node_modules/
+.next/
+.vercel/
+.env*
+!.env.example
+.DS_Store
