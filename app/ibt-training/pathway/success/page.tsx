@@ -19,7 +19,7 @@ export default async function AcademyDepositSuccess({ searchParams }: { searchPa
           event="purchase"
           params={{ flow: "ibt_pathway", value: DEPOSIT_AED, currency: "AED" }}
           ads="ibtDeposit"
-          transactionId={rid}
+          transactionId={rid?.slice(0, 64)}
         />
       )}
       <PaymentResult

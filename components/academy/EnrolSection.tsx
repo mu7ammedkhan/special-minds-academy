@@ -30,23 +30,30 @@ function stash(form: HTMLFormElement) {
 function Fields() {
   return (
     <>
+      {/* Hidden from people and screen readers; bots fill it, and the server drops those. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label>
+          Leave this empty
+          <input name="company_website" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
+      </div>
       <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
         Full name
-        <input name="name" required autoComplete="name" className={field} />
+        <input name="name" required maxLength={120} autoComplete="name" className={field} />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
           Email
-          <input name="email" type="email" autoComplete="email" className={field} />
+          <input name="email" type="email" maxLength={160} autoComplete="email" className={field} />
         </label>
         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
           Phone / WhatsApp
-          <input name="phone" type="tel" autoComplete="tel" className={field} />
+          <input name="phone" type="tel" maxLength={32} autoComplete="tel" className={field} />
         </label>
       </div>
       <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
         Emirate
-        <input name="emirate" className={field} />
+        <input name="emirate" maxLength={60} className={field} />
       </label>
       <p className="-mt-1 text-xs text-soft">Use the email you&apos;ll sign in with — it&apos;s how your payment unlocks the course.</p>
     </>
@@ -78,7 +85,7 @@ function FullForm() {
   return (
     <form
       action={action}
-      className="grid gap-4"
+      className="relative grid gap-4"
       onSubmit={(e) => {
         sendGAEvent("event", "begin_checkout", { flow: "ibt_cohort1", value: IBT_COHORT_1.coursePriceAed, currency: "AED" });
         stash(e.currentTarget);
@@ -96,7 +103,7 @@ function DepositForm() {
   return (
     <form
       action={action}
-      className="grid gap-4"
+      className="relative grid gap-4"
       onSubmit={(e) => {
         sendGAEvent("event", "begin_checkout", { flow: "ibt_pathway", value: DEPOSIT_AED, currency: "AED" });
         stash(e.currentTarget);

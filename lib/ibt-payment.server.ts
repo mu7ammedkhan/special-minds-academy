@@ -1,5 +1,7 @@
+import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getZiinaPaymentIntent } from "@/lib/ziina";
+import { isUuid } from "@/lib/form-security";
 
 /**
  * Ziina's status for an IBT registration, or null if there's nothing to check.
@@ -9,7 +11,8 @@ import { getZiinaPaymentIntent } from "@/lib/ziina";
  * payment server-side before showing a confirmation or firing a conversion.
  */
 export async function getIbtPaymentStatus(registrationId: string | undefined) {
-  if (!registrationId) return null;
+  // Anything that isn't a registration id never reaches the database.
+  if (!isUuid(registrationId)) return null;
   try {
     const { data: paymentIntentId } = await (await createClient()).rpc("get_ibt_payment_intent_id", {
       p_registration_id: registrationId,

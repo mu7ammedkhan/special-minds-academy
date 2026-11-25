@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { registerForCohort1 } from "@/app/ibt-training/cohort-1/actions";
 import { reserveSeat } from "@/app/ibt-training/pathway/actions";
 import { ENQUIRY_COURSES } from "@/lib/academy";
+import { LIMITS, TOO_MANY, field, isBot, overLimit, readContact } from "@/lib/form-security";
 
 // Set only on Vercel previews, which run on a placeholder database. There the
 // forms stop short of saving or opening a checkout and say so; the live host
@@ -13,10 +14,7 @@ const PREVIEW = process.env.CONTACT_FORM_PREVIEW_MODE === "1";
 export type EnrolState = { error?: string; preview?: boolean };
 
 function missingContact(formData: FormData) {
-  const name = String(formData.get("name") || "").trim();
-  const email = String(formData.get("email") || "").trim();
-  const phone = String(formData.get("phone") || "").trim();
-  return !name || (!email && !phone);
+  return "error" in readContact(formData);
 }
 
 // The academy's two IBT checkouts are the specialminds.ae ones, copied as they
@@ -54,26 +52,25 @@ export type EnquiryState = { ok?: boolean; error?: string; preview?: boolean };
  * the CRM, for the same reason the contact form doesn't send practitioners.
  */
 export async function sendAcademyEnquiry(_prev: EnquiryState, formData: FormData): Promise<EnquiryState> {
-  const courseValue = String(formData.get("course") || "not-sure");
+  // A bot that fills the hidden field is told it worked, and nothing is saved.
+  if (isBot(formData)) return { ok: true };
+  const courseValue = field(formData, "course", 40) || "not-sure";
   const course = ENQUIRY_COURSES.find((c) => c.value === courseValue)?.label ?? "Not sure yet";
-  const background = String(formData.get("background") || "").trim();
-  const page = String(formData.get("page") || "/").slice(0, 120);
-  const note = String(formData.get("message") || "").trim().slice(0, 2000);
+  const background = field(formData, "background", LIMITS.background);
+  const page = field(formData, "page", 120);
+  const note = field(formData, "message", LIMITS.message);
 
+  const read = readContact(formData);
+  if ("error" in read) return { error: read.error };
   const lead = {
     kind: "practitioner",
-    name: String(formData.get("name") || "").trim(),
-    email: String(formData.get("email") || "").trim(),
-    phone: String(formData.get("phone") || "").trim(),
-    emirate: String(formData.get("emirate") || "").trim(),
+    ...read.contact,
     service_interest: `Special Minds Academy: ${course}`,
-    page: `specialminds.academy${page.startsWith("/") ? page : "/"}`,
+    page: `specialminds.academy${/^\/[\w\-/]*$/.test(page) ? page : "/"}`,
     message: [`Special Minds Academy enquiry: ${course}.`, background && `Background: ${background}.`, note].filter(Boolean).join("\n"),
   };
-  if (!lead.name || (!lead.email && !lead.phone)) {
-    return { error: "Please add your name and a way to reach you." };
-  }
   if (PREVIEW) return { ok: true, preview: true };
+  if (await overLimit("enquiry", 5, 10 * 60_000)) return { error: TOO_MANY };
 
   // Minted here rather than read back: anon may INSERT into leads but not
   // SELECT it (the leads table in the UAE database).
