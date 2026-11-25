@@ -1,7 +1,7 @@
 "use server";
 import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { TOO_MANY, isBot, isZiinaCheckout, overLimit, readContact, returnOrigin } from "@/lib/form-security";
 import { createClient } from "@/lib/supabase/server";
 import { createZiinaPaymentIntent } from "@/lib/ziina";
 import { syncIbtRegistrationInBackground } from "@/lib/bigin";
@@ -11,24 +11,24 @@ import { DEPOSIT_AED, BALANCE_AED } from "@/lib/ibt-pathway";
 export type RegisterState = { error?: string };
 
 export async function reserveSeat(_prev: RegisterState, formData: FormData): Promise<RegisterState> {
+  // A bot that fills the hidden field gets a plain error and nothing is saved.
+  if (isBot(formData)) return { error: "Something went wrong — please WhatsApp us instead." };
+  const read = readContact(formData);
+  if ("error" in read) return { error: read.error };
   const registration = {
-    name: String(formData.get("name") || "").trim(),
-    email: String(formData.get("email") || "").trim(),
-    phone: String(formData.get("phone") || "").trim(),
-    emirate: String(formData.get("emirate") || "").trim(),
+    ...read.contact,
     cohort: IBT_COHORT_1.slug,
     amount_paid: DEPOSIT_AED,
     is_deposit: true,
     balance_due_aed: BALANCE_AED,
   };
-  if (!registration.name || (!registration.email && !registration.phone)) {
-    return { error: "Please add your name and a way to reach you." };
-  }
   // The consent checkbox is `required` in the form, but that's a client-side
   // guarantee only — a non-refundable deposit warrants checking it server-side too.
   if (formData.get("terms_accepted") !== "on") {
     return { error: "Please confirm you've read and accept the deposit terms." };
   }
+  // Each attempt writes a row and creates a Ziina payment intent, so cap it.
+  if (await overLimit("ibt-checkout", 5, 10 * 60_000)) return { error: TOO_MANY };
 
   // Generated up front (rather than read back after insert) because anon
   // only has an INSERT policy on this table, not SELECT — see
@@ -55,7 +55,7 @@ export async function reserveSeat(_prev: RegisterState, formData: FormData): Pro
     ziina_status: null,
   });
 
-  const origin = (await headers()).get("origin") ?? "";
+  const origin = await returnOrigin();
   let paymentIntent;
   try {
     paymentIntent = await createZiinaPaymentIntent({
@@ -76,5 +76,9 @@ export async function reserveSeat(_prev: RegisterState, formData: FormData): Pro
     p_status: paymentIntent.status,
   });
 
+  // Only ever send the student to Ziina's own checkout.
+  if (!isZiinaCheckout(paymentIntent.redirect_url)) {
+    return { error: "Couldn't reach the payment provider — please try again shortly." };
+  }
   redirect(paymentIntent.redirect_url);
 }

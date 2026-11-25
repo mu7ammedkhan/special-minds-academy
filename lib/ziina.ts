@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "crypto";
 
 const ZIINA_BASE_URL = "https://api-v2.ziina.com/api";
@@ -57,7 +58,7 @@ export async function getZiinaPaymentIntent(id: string): Promise<ZiinaPaymentInt
   const apiKey = process.env.ZIINA_API_KEY;
   if (!apiKey) throw new Error("ZIINA_API_KEY is not configured.");
 
-  const res = await fetch(`${ZIINA_BASE_URL}/payment_intent/${id}`, {
+  const res = await fetch(`${ZIINA_BASE_URL}/payment_intent/${encodeURIComponent(id)}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
     cache: "no-store",
   });

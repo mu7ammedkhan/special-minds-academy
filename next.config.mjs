@@ -24,7 +24,11 @@ const nextConfig = {
     // Source images are renamed when they change, so a month is safe.
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
-  experimental: { optimizePackageImports: ["lucide-react"] },
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+    // The forms send a few short fields; refuse anything larger than this.
+    serverActions: { bodySizeLimit: "64kb" },
+  },
   async redirects() {
     return [
       // www → the bare domain.
@@ -69,7 +73,16 @@ const nextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+      // The parts of a Content-Security-Policy that can't break Google Analytics
+      // or Ads: no framing by other sites, no <base> or plugin tricks, and forms
+      // may only post here (a no-JavaScript checkout is redirected on to Ziina).
+      // Scripts aren't restricted, because gtag loads from several Google hosts.
+      {
+        key: "Content-Security-Policy",
+        value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://*.ziina.com; upgrade-insecure-requests",
+      },
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
     ];
     const rules = [
       {

@@ -58,20 +58,27 @@ export function EnquiryForm({ course = "not-sure", submitLabel = "Send my enquir
   }
 
   return (
-    <form action={action} className="grid gap-4">
+    <form action={action} className="relative grid gap-4">
       <input type="hidden" name="page" value={page} />
+      {/* Hidden from people and screen readers; bots fill it, and the server drops those. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label>
+          Leave this empty
+          <input name="company_website" tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
+      </div>
       <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
         Full name
-        <input name="name" required autoComplete="name" className={field} />
+        <input name="name" required maxLength={120} autoComplete="name" className={field} />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
           Email
-          <input name="email" type="email" autoComplete="email" className={field} />
+          <input name="email" type="email" maxLength={160} autoComplete="email" className={field} />
         </label>
         <label className="grid min-w-0 gap-1.5 text-sm font-medium text-ink">
           Phone / WhatsApp
-          <input name="phone" type="tel" autoComplete="tel" className={field} />
+          <input name="phone" type="tel" maxLength={32} autoComplete="tel" className={field} />
         </label>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -107,7 +114,7 @@ export function EnquiryForm({ course = "not-sure", submitLabel = "Send my enquir
         <span>
           Anything you&apos;d like to ask? <span className="font-normal text-soft">(optional)</span>
         </span>
-        <textarea name="message" rows={3} className={field} />
+        <textarea name="message" rows={3} maxLength={2000} className={field} />
       </label>
       {state.error && <p className="text-sm text-danger" role="alert">{state.error}</p>}
       <Submit label={submitLabel} />

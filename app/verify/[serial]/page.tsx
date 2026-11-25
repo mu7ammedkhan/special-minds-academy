@@ -24,7 +24,12 @@ export const metadata: Metadata = { title: "Certificate verification", robots: {
 const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
 export default async function AcademyVerifySerialPage({ params }: { params: Promise<{ serial: string }> }) {
-  const serial = decodeURIComponent((await params).serial);
+  const raw = (await params).serial;
+  let serial = raw;
+  try {
+    serial = decodeURIComponent(raw);
+  } catch {}
+  serial = serial.trim().slice(0, 64);
 
   // The same anon-granted lookup the main site's page uses. It returns strictly
   // less than the certificate the holder is already showing. A failed call

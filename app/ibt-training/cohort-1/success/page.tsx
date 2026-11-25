@@ -19,7 +19,7 @@ export default async function AcademyFullPaymentSuccess({ searchParams }: { sear
           event="purchase"
           params={{ flow: "ibt_cohort1", value: IBT_COHORT_1.coursePriceAed, currency: "AED" }}
           ads="ibtPurchase"
-          transactionId={rid}
+          transactionId={rid?.slice(0, 64)}
         />
       )}
       <PaymentResult
