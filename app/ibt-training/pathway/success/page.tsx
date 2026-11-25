@@ -9,8 +9,9 @@ export const metadata = { title: "Seat reserved", robots: { index: false } };
 // "ibtDeposit" is the IBT campaigns' bidding target, so it must not change.
 // A deposit doesn't open the course (the auto-enrol trigger only fires on a
 // paid-in-full registration), so this page mustn't say it does.
-export default async function AcademyDepositSuccess({ searchParams }: { searchParams: { rid?: string } }) {
-  const confirmed = (await getIbtPaymentStatus(searchParams.rid)) === "completed";
+export default async function AcademyDepositSuccess({ searchParams }: { searchParams: Promise<{ rid?: string }> }) {
+  const { rid } = await searchParams;
+  const confirmed = (await getIbtPaymentStatus(rid)) === "completed";
   return (
     <>
       {confirmed && (
@@ -18,7 +19,7 @@ export default async function AcademyDepositSuccess({ searchParams }: { searchPa
           event="purchase"
           params={{ flow: "ibt_pathway", value: DEPOSIT_AED, currency: "AED" }}
           ads="ibtDeposit"
-          transactionId={searchParams.rid}
+          transactionId={rid}
         />
       )}
       <PaymentResult

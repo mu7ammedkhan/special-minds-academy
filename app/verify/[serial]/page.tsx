@@ -23,15 +23,15 @@ export const metadata: Metadata = { title: "Certificate verification", robots: {
 
 const dateLabel = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
-export default async function AcademyVerifySerialPage({ params }: { params: { serial: string } }) {
-  const serial = decodeURIComponent(params.serial);
+export default async function AcademyVerifySerialPage({ params }: { params: Promise<{ serial: string }> }) {
+  const serial = decodeURIComponent((await params).serial);
 
   // The same anon-granted lookup the main site's page uses. It returns strictly
   // less than the certificate the holder is already showing. A failed call
   // reads as "not found" rather than an error page.
   let result: VerifyResult = { found: false };
   try {
-    const { data } = await createClient().rpc("ibt_verify_certificate", { p_serial: serial });
+    const { data } = await (await createClient()).rpc("ibt_verify_certificate", { p_serial: serial });
     if (data) result = data as VerifyResult;
   } catch {
     result = { found: false };

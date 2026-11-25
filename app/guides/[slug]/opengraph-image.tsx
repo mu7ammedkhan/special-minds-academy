@@ -9,7 +9,7 @@ export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
 
-export default function Image({ params }: { params: { slug: string } }) {
-  const g = guideBySlug(params.slug);
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const g = guideBySlug((await params).slug);
   return academyOgImage({ eyebrow: g ? `${g.category} guide` : "Guide", title: g?.title ?? "Guides to IBT, ABAT and IBA" });
 }

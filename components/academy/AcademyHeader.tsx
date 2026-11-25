@@ -26,10 +26,15 @@ export function AcademyHeader() {
   const [coursesOpen, setCoursesOpen] = useState(false);
   const coursesRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Close both menus when the page changes. Done during render, React's
+  // pattern for resetting state on a prop change, rather than in an effect,
+  // which would paint the open menu on the new page for a frame first.
+  const [shownPath, setShownPath] = useState(pathname);
+  if (shownPath !== pathname) {
+    setShownPath(pathname);
     setMenuOpen(false);
     setCoursesOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     if (!coursesOpen && !menuOpen) return;

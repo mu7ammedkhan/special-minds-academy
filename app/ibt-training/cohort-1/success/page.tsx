@@ -9,8 +9,9 @@ export const metadata = { title: "Registration received", robots: { index: false
 // builds the link from the request's origin), and where specialminds.ae sends
 // a payment that was in flight when IBT moved. Its conversion is exactly the
 // specialminds.ae page's: same event, flow, Ads action, value and dedupe id.
-export default async function AcademyFullPaymentSuccess({ searchParams }: { searchParams: { rid?: string } }) {
-  const confirmed = (await getIbtPaymentStatus(searchParams.rid)) === "completed";
+export default async function AcademyFullPaymentSuccess({ searchParams }: { searchParams: Promise<{ rid?: string }> }) {
+  const { rid } = await searchParams;
+  const confirmed = (await getIbtPaymentStatus(rid)) === "completed";
   return (
     <>
       {confirmed && (
@@ -18,7 +19,7 @@ export default async function AcademyFullPaymentSuccess({ searchParams }: { sear
           event="purchase"
           params={{ flow: "ibt_cohort1", value: IBT_COHORT_1.coursePriceAed, currency: "AED" }}
           ads="ibtPurchase"
-          transactionId={searchParams.rid}
+          transactionId={rid}
         />
       )}
       <PaymentResult

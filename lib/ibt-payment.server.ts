@@ -11,7 +11,7 @@ import { getZiinaPaymentIntent } from "@/lib/ziina";
 export async function getIbtPaymentStatus(registrationId: string | undefined) {
   if (!registrationId) return null;
   try {
-    const { data: paymentIntentId } = await createClient().rpc("get_ibt_payment_intent_id", {
+    const { data: paymentIntentId } = await (await createClient()).rpc("get_ibt_payment_intent_id", {
       p_registration_id: registrationId,
     });
     if (!paymentIntentId) return null;

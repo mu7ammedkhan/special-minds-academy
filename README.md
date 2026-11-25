@@ -2,7 +2,7 @@
 
 specialminds.academy — the training arm of Special Minds (UAE): IBT, ABAT, IBA and LSA courses, and guides to ABA credentials in the UAE.
 
-A standalone Next.js 14 site (App Router, Tailwind). It was split out of the Special Minds UAE codebase in November 2026.
+A standalone Next.js 16 site (App Router, React 19, Tailwind). It builds with webpack (`next build --webpack`), because Turbopack fails on Hostinger. It was split out of the Special Minds UAE codebase in November 2026.
 
 ## What lives where
 

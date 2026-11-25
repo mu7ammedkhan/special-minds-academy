@@ -16,8 +16,8 @@ export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const g = guideBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const g = guideBySlug((await params).slug);
   if (!g) return { title: "Page not found", robots: { index: false } };
   return {
     title: g.metaTitle,
@@ -165,8 +165,8 @@ function Block({ block }: { block: GuideBlock }) {
   }
 }
 
-export default function GuidePage({ params }: { params: { slug: string } }) {
-  const g = guideBySlug(params.slug);
+export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
+  const g = guideBySlug((await params).slug);
   if (!g) notFound();
   const related = g.relatedGuides.map(guideBySlug).filter((x): x is Guide => Boolean(x));
   const courses = g.relatedCourses.map(courseBySlug);

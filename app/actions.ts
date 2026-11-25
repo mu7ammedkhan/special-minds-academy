@@ -77,7 +77,7 @@ export async function sendAcademyEnquiry(_prev: EnquiryState, formData: FormData
 
   // Minted here rather than read back: anon may INSERT into leads but not
   // SELECT it (the leads table in the UAE database).
-  const { error } = await createClient().from("leads").insert({ id: randomUUID(), ...lead });
+  const { error } = await (await createClient()).from("leads").insert({ id: randomUUID(), ...lead });
   if (error) return { error: "Something went wrong — please WhatsApp us instead." };
   return { ok: true };
 }
